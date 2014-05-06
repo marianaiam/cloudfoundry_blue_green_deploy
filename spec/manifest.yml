@@ -1,0 +1,32 @@
+---
+applications:
+
+- name: the-web-app-worker-green
+  host: the-web-app-worker-green
+  size: 1GB
+  command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
+  services:
+  - creme-fraiche
+
+- name: the-web-app-green
+  host: the-web-url-green
+  domain: cfapps.io
+  size: 1GB
+  command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
+  services:
+  - oyster-cracker
+
+- name: the-web-app-blue
+  host: the-web-url-blue
+  domain: cfapps.io
+  size: 1GB
+  command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
+  services:
+  - oyster-cracker
+
+- name: the-web-app-worker-blue
+  host: the-web-app-worker-blue
+  size: 1GB
+  command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
+  services:
+  - creme-fraiche

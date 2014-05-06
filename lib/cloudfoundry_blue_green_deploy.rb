@@ -1,0 +1,9 @@
+require_relative 'cloudfoundry_blue_green_deploy/app'
+require_relative 'cloudfoundry_blue_green_deploy/route'
+require_relative 'cloudfoundry_blue_green_deploy/command_line'
+require_relative 'cloudfoundry_blue_green_deploy/cloud_foundry'
+require_relative 'cloudfoundry_blue_green_deploy/blue_green_deploy_error'
+require_relative 'cloudfoundry_blue_green_deploy/blue_green_deploy_config'
+require_relative 'cloudfoundry_blue_green_deploy/blue_green_deploy'
+
+BlueGreenDeployConfig
