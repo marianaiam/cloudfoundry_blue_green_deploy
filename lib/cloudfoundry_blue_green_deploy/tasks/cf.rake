@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), '.', 'blue_green_deploy')
+require 'cloudfoundry_blue_green_deploy'
 
 namespace :cf do
   desc 'Only run on the first application instance'
