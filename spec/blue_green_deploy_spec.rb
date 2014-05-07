@@ -73,57 +73,105 @@ describe BlueGreenDeploy do
     end
   end
 
-  describe '#ready_for_takeoff' do
-    subject { BlueGreenDeploy.ready_for_takeoff(hot_app_name, deploy_config) }
+  describe '#get_hot_worker_names' do
+    subject { BlueGreenDeploy.get_hot_worker_names }
     let(:target_color) { 'green' }
-    let(:hot_app_name) { "#{app_name}-#{current_hot_app}" }
-    let(:worker_apps) { CloudFoundryFake.apps }
-    before do
-      allow(BlueGreenDeploy).to receive(:cf).and_return(CloudFoundryFake)
-      CloudFoundryFake.init_route_table(domain, app_name, hot_url, current_hot_app)
-      CloudFoundryFake.init_app_list_with_workers_for(app_name)
-    end
 
-    context 'the target color is the cold app color.' do
-      let(:current_hot_app) { 'blue' }
-
-      it 'does not raise an error: "It`s kosh!"' do
-        expect{ subject }.to_not raise_error
+    context 'there are no started worker apps' do
+      before do
+        allow(BlueGreenDeploy).to receive(:cf).and_return(CloudFoundryFake)
+        CloudFoundryFake.init_app_list_from_names(worker_app_names)
       end
 
-      context 'but, one or more of the corresponding worker apps is already hot' do
-        before { CloudFoundryFake.replace_app(App.new(name: "#{app_name}-worker-#{target_color}", state: 'started')) }
+      it 'returns an empty array' do
+        expect(subject).to eq []
+      end
+    end
 
-        it 'raises an InvalidWorkerStateError' do
-          expect{ subject }.to raise_error(InvalidWorkerStateError)
+    context 'a worker app is started (and another is stopped)' do
+      before do
+        allow(BlueGreenDeploy).to receive(:cf).and_return(CloudFoundryFake)
+        CloudFoundryFake.init_app_list_from_names(worker_app_names)
+        CloudFoundryFake.mark_workers_as_started(worker_app_names, target_color)
+      end
+
+      it 'returns just the started worker app' do
+        expect(subject).to eq(worker_app_names.map { |app_name| "#{app_name}-#{target_color}" })
+      end
+    end
+  end
+
+  describe '#ready_for_takeoff' do
+    let(:target_color) { 'green' }
+    subject { BlueGreenDeploy.ready_for_takeoff(hot_app_name, both_invalid_and_valid_hot_worker_names, deploy_config) }
+    before { allow(BlueGreenDeploy).to receive(:cf).and_return(CloudFoundryFake) }
+
+    context 'first deploy: there are no apps deployed' do
+      let(:hot_app_name) { nil }
+      let(:worker_app_names) { [] }
+      let(:both_invalid_and_valid_hot_worker_names) { worker_app_names }
+      before { CloudFoundryFake.init_app_list(worker_app_names) }
+
+      it 'allows the deploy to proceed' do
+        expect{ subject }.not_to raise_error
+      end
+    end
+
+    context 'in subsequent deploys' do
+      let(:hot_app_name) { "#{app_name}-#{current_hot_app}" }
+      let(:worker_apps) { CloudFoundryFake.apps }
+      let(:both_invalid_and_valid_hot_worker_names) { worker_apps.select { |app| app.state == 'started' }.map(&:name) }
+      before do
+        CloudFoundryFake.init_route_table(domain, app_name, hot_url, current_hot_app)
+        CloudFoundryFake.init_app_list_with_workers_for(app_name)
+      end
+      context 'the target color is the cold app color.' do
+        let(:current_hot_app) { 'blue' }
+
+        it 'does not raise an error: "It`s kosh!"' do
+          expect{ subject }.to_not raise_error
+        end
+
+        context 'but, one or more of the corresponding worker apps is already hot' do
+          before do
+            CloudFoundryFake.replace_app(App.new(name: "#{app_name}-worker-#{target_color}", state: 'started'))
+            both_invalid_and_valid_hot_worker_names = ["#{app_name}-worker-#{target_color}"]
+          end
+
+          it 'raises an InvalidWorkerStateError' do
+            expect{ subject }.to raise_error(InvalidWorkerStateError)
+          end
         end
       end
-    end
 
-    context 'the target color matches what`s already hot' do
-      let(:current_hot_app) { 'green' }
-      it 'raises an InvalidRouteStateError' do
-        expect{ subject }.to raise_error(InvalidRouteStateError)
-      end
-    end
-
-    context 'when blue/green is omitted' do
-      let(:target_color) { nil }
-
-      context 'there is no current hot app' do
-        let(:current_hot_app) { '' }
-        let(:hot_app_name) { nil }
-        before { CloudFoundryFake.remove_route(hot_url) }
-
+      context 'the target color matches what`s already hot' do
+        let(:current_hot_app) { 'green' }
         it 'raises an InvalidRouteStateError' do
           expect{ subject }.to raise_error(InvalidRouteStateError)
+        end
+      end
+
+      context 'and blue/green is omitted' do
+        let(:target_color) { nil }
+
+        context 'and there is no current hot app and there are started worker apps' do
+          let(:current_hot_app) { '' }
+          let(:hot_app_name) { nil }
+          before do
+            CloudFoundryFake.remove_route(hot_url)
+            CloudFoundryFake.mark_app_as_started(CloudFoundryFake.apps.sample.name)
+          end
+
+          it 'raises an InvalidRouteStateError' do
+            expect{ subject }.to raise_error(InvalidRouteStateError)
+          end
         end
       end
     end
   end
 
-  describe '#get_hot_app' do
-    subject { BlueGreenDeploy.get_hot_app(hot_url) }
+  describe '#get_hot_web_app' do
+    subject { BlueGreenDeploy.get_hot_web_app(hot_url) }
     let(:current_hot_color) { 'green' }
     let(:hot_app) { "#{app_name}-#{current_hot_color}" }
 
@@ -163,7 +211,7 @@ describe BlueGreenDeploy do
 
       it 'the target_color is mapped to the hot_url' do
         subject
-        expect(BlueGreenDeploy.get_hot_app(hot_url)).to eq "#{app_name}-#{target_color}"
+        expect(BlueGreenDeploy.get_hot_web_app(hot_url)).to eq "#{app_name}-#{target_color}"
       end
     end
 
@@ -175,19 +223,19 @@ describe BlueGreenDeploy do
 
       it 'the target_color is mapped to the hot_url' do
         subject
-        expect(BlueGreenDeploy.get_hot_app(hot_url)).to eq "#{app_name}-#{target_color}"
+        expect(BlueGreenDeploy.get_hot_web_app(hot_url)).to eq "#{app_name}-#{target_color}"
       end
     end
 
     context 'when the hot url IS mapped to an app, already' do
       it 'the app that was mapped to the hot_url is no longer mapped to hot_url' do
         subject
-        expect(BlueGreenDeploy.get_hot_app(hot_url)).to_not eq "#{app_name}-#{current_hot_app}"
+        expect(BlueGreenDeploy.get_hot_web_app(hot_url)).to_not eq "#{app_name}-#{current_hot_app}"
       end
 
       it 'the target_color is mapped to the hot_url' do
         subject
-        expect(BlueGreenDeploy.get_hot_app(hot_url)).to eq "#{app_name}-#{target_color}"
+        expect(BlueGreenDeploy.get_hot_web_app(hot_url)).to eq "#{app_name}-#{target_color}"
       end
     end
   end
