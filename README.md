@@ -190,6 +190,40 @@ In this example:
      $ bundle exec rake cf:blue_green_deploy[carrot-soup,pickle-breath]
 
 
+# Blue/Green with Shutter
+
+TODO: explain scenario/context for including a shutter in the mix.
+
+## Creating a Minimal Shutter App
+
+1. add the following to your manifest.yml:
+
+    - name: blue-green-shutter
+      command: bundle exec rackup config.ru -p $PORT -E $RACK_ENV
+      path: shutter-app
+
+2. create a directory named "shutter-app".  In that directory:
+   1. create a Rack config (config.ru):
+
+    class Message
+      def call(env)
+        [200, {"Content-Type" => "text/plain"}, ["Temporarily down for maintenance. Please check back shortly."]]
+      end
+    end
+
+    run Message.new
+
+   2. create a minimal Gemfile:
+
+    source 'https://rubygems.org'
+    ruby '2.0.0'
+
+    gem 'rack'
+
+   3. create the Gemfile.lock by running Bundler in the "shutter-app" directory:
+
+    $ bundle install
+
 
  Stuff to add:
  - Our fail-fast philosophy. We recommend understanding deployment on Cloud Foundry before using this tool.
