@@ -8,6 +8,9 @@ class BlueGreenDeployConfig
 
   def initialize(cf_manifest, web_app_name, worker_app_names, target_color = nil)
     manifest = cf_manifest['applications']
+
+    self.class.valid_name_check(web_app_name, worker_app_names, manifest)
+
     item = manifest.find { |item| self.class.strip_color(item['name']) == web_app_name }
     if item.nil?
       raise InvalidManifestError.new("Could not find \"#{web_app_name}-green\" nor \"#{web_app_name}-blue\" in the Cloud Foundry manifest:\n" +
@@ -28,6 +31,7 @@ class BlueGreenDeployConfig
         "Could not find the \"domain\" property associated with the \"#{item['name']}\" application in the Cloud Foundry manifest:\n" +
         "#{cf_manifest.inspect}")
     end
+
     @web_app_name = web_app_name
     @hot_url = host.slice(0, host.rindex('-'))
     @worker_app_names = worker_app_names
@@ -48,6 +52,17 @@ class BlueGreenDeployConfig
     end
   end
 
+  def self.valid_name_check(web_app_name, worker_app_names, manifest)
+    all_apps = all_app_names(web_app_name, worker_app_names)
+    all_apps.each do |app_name|
+      if manifest.none? { |record| record['name'] == app_name }
+        raise InvalidManifestError.new("Could not find \"#{app_name}\" in the Cloud Foundry manifest:\n" +
+                                 "#{manifest}")
+
+      end
+    end
+  end
+
   def self.strip_color(app_name_with_color)
     app_name_with_color.slice((0..app_name_with_color.rindex('-') - 1))
   end
@@ -64,5 +79,22 @@ class BlueGreenDeployConfig
 
   def self.toggle_color(target_color)
     target_color == 'green' ? 'blue' : 'green'
+  end
+
+  def self.colorize_name(app_name, color)
+    "#{app_name}-#{color}"
+  end
+
+  def self.all_app_names(web_app_name, worker_app_names)
+    all_app_names = []
+    all_app_names <<  colorize_name(web_app_name, 'blue')
+    all_app_names <<  colorize_name(web_app_name, 'green')
+
+    worker_app_names.each do |app|
+      all_app_names << colorize_name(app, 'green')
+      all_app_names << colorize_name(app, 'blue')
+    end
+
+    all_app_names
   end
 end
