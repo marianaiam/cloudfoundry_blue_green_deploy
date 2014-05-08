@@ -1,5 +1,5 @@
 class App
-  attr_reader :name, :state
+  attr_accessor :name, :state
 
   def initialize(name: , state: 'stopped')
     @name = name

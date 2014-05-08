@@ -18,6 +18,29 @@ class CloudFoundryFake
     ]
   end
 
+  def self.init_app_list_from_names(app_names)
+    @@cf_app_list = []
+    app_names.each do |app|
+      ['blue', 'green'].each do |color|
+        @@cf_app_list << App.new(name: "#{app}-#{color}", state: 'stopped')
+      end
+    end
+  end
+
+  def self.mark_app_as_started(full_worker_app_name)
+    @@cf_app_list.find { |app| app.name == full_worker_app_name }.state = 'started'
+  end
+
+  def self.mark_workers_as_started(worker_app_names, target_color)
+    @@cf_app_list.each do |app|
+      worker_app_names.each do |worker_name|
+        if app.name == "#{worker_name}-#{target_color}"
+          app.state = 'started'
+        end
+      end
+    end
+  end
+
   def self.init_app_list(apps)
     @@cf_app_list = apps
   end
