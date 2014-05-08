@@ -44,7 +44,7 @@ describe BlueGreenDeploy do
 
     end
 
-    context 'when blue/green is omitted and there is already a hot app' do
+    context 'when blue/green is omitted' do
       let(:target_color) { nil }
       let(:worker_apps) { worker_app_names }
       subject { BlueGreenDeploy.make_it_so(app_name, worker_apps, deploy_config) }
@@ -53,25 +53,51 @@ describe BlueGreenDeploy do
         CloudFoundryFake.init_route_table(domain, app_name, hot_url, current_hot_app)
         CloudFoundryFake.init_app_list_with_workers_for(app_name)
       end
+      context 'and there is already a hot app' do
 
-      context 'green is the current hot app' do
-        let(:current_hot_app) { 'green' }
+        context 'green is the current hot app' do
+          let(:current_hot_app) { 'green' }
 
-        it 'makes blue the current hot app' do
-          subject
-          expect(CloudFoundryFake.find_route(hot_url).app).to eq "#{app_name}-blue"
+          it 'makes blue the current hot app' do
+            subject
+            expect(CloudFoundryFake.find_route(hot_url).app).to eq "#{app_name}-blue"
+          end
+        end
+
+        context 'blue is the current hot app' do
+          let(:current_hot_app) { 'blue' }
+
+          it 'makes green the current hot app' do
+            subject
+            expect(CloudFoundryFake.find_route(hot_url).app).to eq "#{app_name}-green"
+          end
         end
       end
 
-      context 'blue is the current hot app' do
-        let(:current_hot_app) { 'blue' }
+      context 'there is no hot app' do
+        let(:current_hot_app) { nil }
+        before { CloudFoundryFake.clear_route_table }
 
-        it 'makes green the current hot app' do
-          subject
-          expect(CloudFoundryFake.find_route(hot_url).app).to eq "#{app_name}-green"
+        context 'there are no hot worker apps' do
+          let(:worker_app_names) { [] }
+          before { CloudFoundryFake.clear_app_list }
+          it 'deploys "blue" instances' do
+            subject
+            hot_web_app = CloudFoundryFake.find_route(hot_url).app
+            expect(BlueGreenDeploy.get_color_stem(hot_web_app)).to eq 'blue'
+            CloudFoundryFake.started_apps.each do |worker_app|
+              expect(BlueGreenDeploy.get_color_stem(worker_app.name)).to eq 'blue'
+            end
+          end
+        end
+
+        context 'there ARE hot worker apps' do
+          before { CloudFoundryFake.mark_app_as_started("#{worker_app_names.first}-blue") }
+          it 'raises an InvalidRouteStateError' do
+            expect{ subject }.to raise_error(InvalidRouteStateError)
+          end
         end
       end
-
     end
   end
 

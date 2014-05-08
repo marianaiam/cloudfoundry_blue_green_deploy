@@ -11,6 +11,10 @@ class CloudFoundryFake
     ]
   end
 
+  def self.clear_route_table
+    @@cf_route_table = []
+  end
+
   def self.init_app_list_with_workers_for(app_name)
     @@cf_app_list = [
       App.new(name: "#{app_name}-worker-green", state: 'stopped'),
@@ -45,6 +49,10 @@ class CloudFoundryFake
     @@cf_app_list = apps
   end
 
+  def self.clear_app_list
+    @@cf_app_list = []
+  end
+
   # App List Helpers
 
   def self.replace_app(new_app)
@@ -54,6 +62,11 @@ class CloudFoundryFake
 
   def self.apps
     @@cf_app_list
+  end
+
+
+  def self.started_apps
+    @@cf_app_list.select { |app| app.state == 'started' }
   end
 
   # Route Table Helpers

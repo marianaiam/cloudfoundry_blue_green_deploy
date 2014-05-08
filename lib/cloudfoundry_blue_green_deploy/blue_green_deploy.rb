@@ -15,8 +15,12 @@ class BlueGreenDeploy
     hot_app_name = get_hot_web_app(deploy_config.hot_url)
     both_invalid_and_valid_hot_worker_names = get_hot_worker_names
 
-    if deploy_config.target_color.nil? && hot_app_name
-      deploy_config.target_color = determine_target_color(hot_app_name)
+    if deploy_config.target_color.nil?
+      if first_deploy?(hot_app_name, both_invalid_and_valid_hot_worker_names)
+        deploy_config.target_color = 'blue'
+      else
+        deploy_config.target_color = determine_target_color(hot_app_name) unless hot_app_name.nil?
+      end
     end
 
     ready_for_takeoff(hot_app_name, both_invalid_and_valid_hot_worker_names, deploy_config)
