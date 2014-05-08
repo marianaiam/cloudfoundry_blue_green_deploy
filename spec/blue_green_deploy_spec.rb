@@ -10,11 +10,13 @@ describe BlueGreenDeploy do
   let(:app_name) { 'the-web-app' }
 
   describe '#make_it_so' do
-    context 'when blue/green is specified' do
+    context 'when blue/green is specified and it is NOT a first-deploy' do
       let(:worker_apps) { worker_app_names }
       let(:target_color) { 'green' }
       let(:current_hot_app) { 'blue' }
+
       subject { BlueGreenDeploy.make_it_so(app_name, worker_apps, deploy_config) }
+
       before do
         allow(BlueGreenDeploy).to receive(:cf).and_return(CloudFoundryFake)
         CloudFoundryFake.init_route_table(domain, app_name, hot_url, current_hot_app)

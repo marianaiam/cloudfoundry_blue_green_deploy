@@ -22,24 +22,28 @@ class BlueGreenDeploy
     ready_for_takeoff(hot_app_name, both_invalid_and_valid_hot_worker_names, deploy_config)
 
     cf.push(deploy_config.target_web_app_name)
+
     deploy_config.target_worker_app_names.each do |worker_app_name|
-      to_be_cold_worker = BlueGreenDeployConfig.toggle_app_color(worker_app_name)
-
       cf.push(worker_app_name)
-      cf.stop(to_be_cold_worker)
+      unless first_deploy?(hot_app_name, both_invalid_and_valid_hot_worker_names)
+        to_be_cold_worker = BlueGreenDeployConfig.toggle_app_color(worker_app_name)
+        cf.stop(to_be_cold_worker)
+      end
     end
-    make_hot(app_name, deploy_config)
 
+    make_hot(app_name, deploy_config)
   end
 
   def self.ready_for_takeoff(hot_app_name, both_invalid_and_valid_hot_worker_names, deploy_config)
-    first_deploy = hot_app_name.nil? && both_invalid_and_valid_hot_worker_names.empty?
-
-    unless first_deploy
+    unless first_deploy?(hot_app_name, both_invalid_and_valid_hot_worker_names)
       ensure_there_is_a_hot_instance(deploy_config, hot_app_name)
       ensure_hot_instance_is_not_target(deploy_config, hot_app_name)
       ensure_hot_workers_are_not_target(deploy_config)
     end
+  end
+
+  def self.first_deploy?(hot_app_name, both_invalid_and_valid_hot_worker_names)
+     hot_app_name.nil? && both_invalid_and_valid_hot_worker_names.empty?
   end
 
   def self.ensure_there_is_a_hot_instance(deploy_config, hot_app_name)
@@ -53,7 +57,7 @@ class BlueGreenDeploy
   def self.ensure_hot_instance_is_not_target(deploy_config, hot_app_name)
     if deploy_config.is_in_target?(hot_app_name)
       raise InvalidRouteStateError.new(
-        "The #{deploy_config.target_color} instance is already hot.")
+        "The app \"#{hot_app_name}\" is already hot (target color is #{deploy_config.target_color}).")
     end
   end
 
@@ -62,7 +66,7 @@ class BlueGreenDeploy
     deploy_config.target_worker_app_names.each do |hot_worker|
       if deploy_config.is_in_target?(hot_worker) && invalid_worker?(hot_worker, apps)
         raise InvalidWorkerStateError.new(
-          "Worker #{hot_worker} is already hot (going to #{deploy_config.target_color})")
+          "Worker #{hot_worker} is already hot (target color is #{deploy_config.target_color}).")
       end
     end
   end
