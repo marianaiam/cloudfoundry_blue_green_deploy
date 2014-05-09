@@ -4,13 +4,14 @@ require_relative 'cloud_foundry_fake'
 describe BlueGreenDeploy do
   let(:cf_manifest) { YAML.load_file('spec/manifest.yml') }
   let(:worker_app_names) { ['the-web-app-worker'] }
-  let(:deploy_config) { BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, target_color) }
+  let(:deploy_config) { BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, use_shutter, target_color) }
   let(:domain) { 'cfapps.io' }
   let(:hot_url) { 'the-web-url' }
   let(:app_name) { 'the-web-app' }
+  let(:use_shutter) { nil }
 
   describe '#make_it_so' do
-    context 'when blue/green is specified and it is NOT a first-deploy' do
+    context 'when blue/green is specified and it is NOT a first-deploy AND deploy does not imply shutter' do
       let(:worker_apps) { worker_app_names }
       let(:target_color) { 'green' }
       let(:current_hot_app) { 'blue' }
@@ -23,25 +24,54 @@ describe BlueGreenDeploy do
         CloudFoundryFake.init_app_list_with_workers_for(app_name)
       end
 
-      it 'instructs Cloud Foundry to deploy the specified web app; ' +
-         'THEN, deploys each of the specified worker apps, stopping their counterparts; ' +
-         'and THEN, makes the specified web app "hot" ' +
-         '(mapping the "hot" route to it and unmapping that "hot" route from it`s counterpart)' do
-        green_or_blue = BlueGreenDeployConfig.toggle_color(target_color)
-        old_worker_app_full_name = "#{worker_apps.first}-#{green_or_blue}"
-        new_worker_app_full_name = "#{worker_apps.first}-#{target_color}"
-        new_web_app_full_name = "#{app_name}-#{target_color}"
-        old_web_app_full_name = "#{app_name}-#{green_or_blue}"
+      context 'AND deploy does not imply shutter' do
+        let(:use_shutter) { false }
+        it 'instructs Cloud Foundry to deploy the specified web app; ' +
+           'THEN, deploys each of the specified worker apps, stopping their counterparts; ' +
+           'and THEN, makes the specified web app "hot" ' +
+           '(mapping the "hot" route to it and unmapping that "hot" route from it`s counterpart)' do
+          green_or_blue = BlueGreenDeployConfig.toggle_color(target_color)
+          old_worker_app_full_name = "#{worker_apps.first}-#{green_or_blue}"
+          new_worker_app_full_name = "#{worker_apps.first}-#{target_color}"
+          new_web_app_full_name = "#{app_name}-#{target_color}"
+          old_web_app_full_name = "#{app_name}-#{green_or_blue}"
 
-        expect(CloudFoundryFake).to receive(:push).with(new_web_app_full_name).ordered.and_call_original
-        expect(CloudFoundryFake).to receive(:push).with(new_worker_app_full_name).ordered.and_call_original
-        expect(CloudFoundryFake).to receive(:stop).with(old_worker_app_full_name).ordered.and_call_original
-        expect(CloudFoundryFake).to receive(:map_route).with(new_web_app_full_name, domain, hot_url).ordered.and_call_original
-        expect(CloudFoundryFake).to receive(:unmap_route).with(old_web_app_full_name, domain, hot_url).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:push).with(new_web_app_full_name).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:push).with(new_worker_app_full_name).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:stop).with(old_worker_app_full_name).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:map_route).with(new_web_app_full_name, domain, hot_url).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:unmap_route).with(old_web_app_full_name, domain, hot_url).ordered.and_call_original
 
-        subject
+          subject
+        end
       end
 
+      context 'AND deploy does not imply shutter' do
+        let(:use_shutter) { true }
+        it 'instructs Cloud Foundry to deploy the specified web app; ' +
+           'THEN, deploys each of the specified worker apps, stopping their counterparts; ' +
+           'and THEN, makes the specified web app "hot" ' +
+           '(mapping the "hot" route to it and unmapping that "hot" route from it`s counterpart)' do
+          green_or_blue = BlueGreenDeployConfig.toggle_color(target_color)
+          shutter_app_name = deploy_config.shutter_app_name
+          old_worker_app_full_name = "#{worker_apps.first}-#{green_or_blue}"
+          new_worker_app_full_name = "#{worker_apps.first}-#{target_color}"
+          new_web_app_full_name = "#{app_name}-#{target_color}"
+          old_web_app_full_name = "#{app_name}-#{green_or_blue}"
+
+          expect(CloudFoundryFake).to receive(:push).with(shutter_app_name).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:map_route).with(shutter_app_name, domain, hot_url).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:unmap_route).with(old_web_app_full_name, domain, hot_url).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:push).with(new_web_app_full_name).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:push).with(new_worker_app_full_name).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:stop).with(old_worker_app_full_name).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:map_route).with(new_web_app_full_name, domain, hot_url).ordered.and_call_original
+          expect(CloudFoundryFake).to receive(:unmap_route).with(shutter_app_name, domain, hot_url).ordered.and_call_original
+
+          subject
+        end
+
+      end
     end
 
     context 'when blue/green is omitted' do

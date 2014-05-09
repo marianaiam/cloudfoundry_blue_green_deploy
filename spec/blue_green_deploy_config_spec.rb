@@ -5,8 +5,9 @@ describe BlueGreenDeployConfig do
   let(:web_app_name) { 'the-web-app' }
   let(:web_url_name) { 'the-web-url' }
   let(:worker_app_names) { ['the-web-app-worker', 'hard-worker'] }
+  let(:use_shutter) { false }
   let(:target_color) { nil }
-  let(:deploy_config) { BlueGreenDeployConfig.new(cf_manifest, web_app_name, worker_app_names, target_color) }
+  let(:deploy_config) { BlueGreenDeployConfig.new(cf_manifest, web_app_name, worker_app_names, use_shutter, target_color) }
   describe '#initialize' do
     subject { deploy_config }
     context 'given a parsed conforming manifest.yml' do
@@ -16,6 +17,13 @@ describe BlueGreenDeployConfig do
 
       it 'determines the "domain" (i.e the Cloud Foundry domain)' do
         expect(subject.domain).to eq 'cfapps.io'
+      end
+
+      context 'user requested "shutter treatment"' do
+        let(:use_shutter) { true }
+        it 'indicates "use shutter"' do
+          expect(subject.use_shutter).to eq true
+        end
       end
     end
 
@@ -69,6 +77,13 @@ describe BlueGreenDeployConfig do
         expect(subject[0]).to eq 'the-web-app-worker-green'
         expect(subject[1]).to eq 'hard-worker-green'
       end
+    end
+  end
+
+  describe '.shutter_app_name' do
+    subject { deploy_config.shutter_app_name }
+    it 'provides the CF app name for the Shutter app.' do
+      expect(subject).to eq "#{web_app_name}-shutter"
     end
   end
 
