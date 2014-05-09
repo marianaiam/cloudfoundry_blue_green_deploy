@@ -1,5 +1,5 @@
 require_relative 'route'
-require_relative 'cloud_foundry'
+require_relative 'cloudfoundry'
 require_relative 'blue_green_deploy_error'
 require_relative 'blue_green_deploy_config'
 
@@ -9,7 +9,7 @@ module CloudfoundryBlueGreenDeploy
 
   class BlueGreenDeploy
     def self.cf
-      CloudFoundry
+      Cloudfoundry
     end
 
     def self.make_it_so(app_name, worker_apps, deploy_config)

@@ -1,47 +1,47 @@
 require 'spec_helper'
 
 module CloudfoundryBlueGreenDeploy
-  describe CloudFoundry do
+  describe Cloudfoundry do
     describe '#push' do
-      subject { CloudFoundry.push(app) }
+      subject { Cloudfoundry.push(app) }
       let(:app) { 'app_name-blue' }
 
-      it 'invokes the CloudFoundry CLI command "push"' do
+      it 'invokes the Cloudfoundry CLI command "push"' do
         expect(CommandLine).to receive(:system).with("cf push #{app}").and_return(true)
         subject
       end
 
-      context 'when the CloudFoundry push fails' do
+      context 'when the Cloudfoundry push fails' do
         before do
           allow(CommandLine).to receive(:system).and_return(false)
         end
-        it 'throws a CloudFoundryCliError' do
-          expect{ subject }.to raise_error(CloudFoundryCliError)
+        it 'throws a CloudfoundryCliError' do
+          expect{ subject }.to raise_error(CloudfoundryCliError)
         end
       end
     end
 
     describe '#stop' do
-      subject { CloudFoundry.stop(app) }
+      subject { Cloudfoundry.stop(app) }
       let(:app) { 'app_name-blue' }
 
-      it 'invokes the CloudFoundry CLI command "stop"' do
+      it 'invokes the Cloudfoundry CLI command "stop"' do
         expect(CommandLine).to receive(:system).with("cf stop #{app}").and_return(true)
         subject
       end
 
-      context 'when the CloudFoundry push fails' do
+      context 'when the Cloudfoundry push fails' do
         before do
           allow(CommandLine).to receive(:system).and_return(false)
         end
-        it 'throws a CloudFoundryCliError' do
-          expect{ subject }.to raise_error(CloudFoundryCliError)
+        it 'throws a CloudfoundryCliError' do
+          expect{ subject }.to raise_error(CloudfoundryCliError)
         end
       end
     end
 
     describe '#apps' do
-      subject { CloudFoundry.apps }
+      subject { Cloudfoundry.apps }
       before do
         allow(CommandLine).to receive(:backtick).with('cf apps').and_return(cli_apps_output)
       end
@@ -72,7 +72,7 @@ module CloudfoundryBlueGreenDeploy
     end
 
     describe '#routes' do
-      subject { CloudFoundry.routes }
+      subject { Cloudfoundry.routes }
       before do
         allow(CommandLine).to receive(:backtick).with('cf routes').and_return(cli_routes_output)
       end
@@ -108,8 +108,8 @@ module CloudfoundryBlueGreenDeploy
         Failed fetching routes.
           CLI
         }
-        it 'throws a CloudFoundryCliError' do
-          expect{ subject }.to raise_error(CloudFoundryCliError)
+        it 'throws a CloudfoundryCliError' do
+          expect{ subject }.to raise_error(CloudfoundryCliError)
         end
       end
     end
@@ -119,19 +119,19 @@ module CloudfoundryBlueGreenDeploy
       let(:domain) { 'the-domain' }
       let(:host) { 'the-host' }
 
-      subject { CloudFoundry.map_route(app, domain, host) }
+      subject { Cloudfoundry.map_route(app, domain, host) }
 
-      it 'invokes the CloudFoundry CLI command "map-route" with the proper set of parameters' do
+      it 'invokes the Cloudfoundry CLI command "map-route" with the proper set of parameters' do
         expect(CommandLine).to receive(:system).with("cf map-route #{app} #{domain} -n #{host}").and_return(true)
         subject
       end
 
-      context 'when the CloudFoundry map-route fails' do
+      context 'when the Cloudfoundry map-route fails' do
         before do
           allow(CommandLine).to receive(:system).and_return(false)
         end
-        it 'throws a CloudFoundryCliError' do
-          expect{ subject }.to raise_error(CloudFoundryCliError)
+        it 'throws a CloudfoundryCliError' do
+          expect{ subject }.to raise_error(CloudfoundryCliError)
         end
       end
     end
@@ -141,19 +141,19 @@ module CloudfoundryBlueGreenDeploy
       let(:domain) { 'the-domain' }
       let(:host) { 'the-host' }
 
-      subject { CloudFoundry.unmap_route(app, domain, host) }
+      subject { Cloudfoundry.unmap_route(app, domain, host) }
 
-      it 'invokes the CloudFoundry CLI command "unmap-route" with the proper set of parameters' do
+      it 'invokes the Cloudfoundry CLI command "unmap-route" with the proper set of parameters' do
         expect(CommandLine).to receive(:system).with("cf unmap-route #{app} #{domain} -n #{host}").and_return(true)
         subject
       end
 
-      context 'when the CloudFoundry unmap-route fails' do
+      context 'when the Cloudfoundry unmap-route fails' do
         before do
           allow(CommandLine).to receive(:system).and_return(false)
         end
-        it 'throws a CloudFoundryCliError' do
-          expect{ subject }.to raise_error(CloudFoundryCliError)
+        it 'throws a CloudfoundryCliError' do
+          expect{ subject }.to raise_error(CloudfoundryCliError)
         end
       end
     end

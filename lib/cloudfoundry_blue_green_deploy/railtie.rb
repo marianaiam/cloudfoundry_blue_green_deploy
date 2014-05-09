@@ -1,6 +1,6 @@
 require 'rails'
 
-module CloudFoundryBlueGreenDeploy
+module CloudfoundryBlueGreenDeploy
   class Railtie < Rails::Railtie
     railtie_name :cloudfoundry_blue_green_deploy
 

@@ -4,9 +4,9 @@ require_relative './app'
 
 module CloudfoundryBlueGreenDeploy
 
-  class CloudFoundryCliError < StandardError; end
+  class CloudfoundryCliError < StandardError; end
 
-  class CloudFoundry
+  class Cloudfoundry
 
     def self.apps
       apps = []
@@ -60,7 +60,7 @@ module CloudfoundryBlueGreenDeploy
         end
         routes
       else
-        raise CloudFoundryCliError.new("\"#{cmd}\" returned \"#{success}\".  The output of the command was \n\"#{output}\".")
+        raise CloudfoundryCliError.new("\"#{cmd}\" returned \"#{success}\".  The output of the command was \n\"#{output}\".")
       end
     end
 
@@ -83,7 +83,7 @@ module CloudfoundryBlueGreenDeploy
       if success
         return success
       else
-        raise CloudFoundryCliError.new("\"#{cmd}\" returned \"#{success}\".  Look for details in \"FAILED\" above.")
+        raise CloudfoundryCliError.new("\"#{cmd}\" returned \"#{success}\".  Look for details in \"FAILED\" above.")
       end
     end
   end

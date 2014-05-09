@@ -1,5 +1,5 @@
 module CloudfoundryBlueGreenDeploy
-  class CloudFoundryFake
+  class CloudfoundryFake
     def self.init_route_table(domain, web_app_name, hot_url, current_hot_color)
       @@web_app_name = web_app_name
       @@current_hot_color = current_hot_color
@@ -82,7 +82,7 @@ module CloudfoundryBlueGreenDeploy
       @@cf_route_table.delete_if { |route| route.host == host }
     end
 
-    # CloudFoundry fakes
+    # Cloudfoundry fakes
     def self.push(app)
     end
 
