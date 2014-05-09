@@ -54,7 +54,7 @@ describe CloudFoundry do
         name                requested state   instances   memory   disk   urls
         carrot-soup-blue    stopped           0/1         1G       1G     carrot-soup-blue.cfapps.io
         carrot-soup-green   started           1/1         1G       1G     la-pong.cfapps.io, carrot-soup-green.cfapps.io
-        red                 started           1/1         1G       1G     pickle-breath.cfapps.io
+        red                 started           1/1         1G       1G     relish.cfapps.io
         CLI
       }
 

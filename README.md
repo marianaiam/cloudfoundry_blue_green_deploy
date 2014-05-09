@@ -28,56 +28,11 @@ Or install it yourself as:
 1. define the blue and green instances of your application(s) in your Cloud Foundry Manifest.  (see rules in the next section)
 2. run
 
-    $ bundle exec rake cf:blue_green_deploy[web-app-name,blue]
-
-   where "web-app-name" is the "name" attribute (with a color) in your manifest.yml.
-   specify the color that you would like to be the "live" instance on the first deployment.
-
-### manifest.yml
-
-Your Cloud Foundry manifest file must comply with the following requirements:
-
-1. name: two application instances are required. One name ending with "-green" and another ending with "-blue"
-2. host: the url. One ending with "-green" and the other ending with "-blue"
-3. domain: required
-4. command: Must not include a migration
-5. services: Optional, only required if there are services that need to be bound
-
-#### Bare Minimum Example:
-
-In this example:
-- Our web application is known to Cloud Foundry as "carrot-soup".
-- "carrot-soup" has a database service known as "oyster-cracker".
-
-    ---
-    applications:
-
-    - name: carrot-soup-green
-      host: la-pong-green
-      domain: cfapps.io
-      command: bundle exec rails s -p $PORT -e $RAILS_ENV
-      services:
-      - oyster-cracker
-
-    - name: carrot-soup-blue
-      host: la-pong-blue
-      domain: cfapps.io
-      command: bundle exec rails s -p $PORT -e $RAILS_ENV
-      services:
-      - oyster-cracker
-
-And perform a blue/green deploy like this:
-
-    $ bundle exec rake cf:blue_green_deploy[carrot-soup]
-
-## Usage
-
-1. define the blue and green instances of your application(s) in your Cloud Foundry Manifest.  (see rules in the next section)
-2. run
-
     $ bundle exec rake cf:blue_green_deploy[web-app-name]
 
-   where "web-app-name" is the "name" attribute (without a color) in your manifest.yml.
+   Where "web-app-name" is the "name" attribute in your manifest.yml.
+   The default color for first deployment is blue.
+   You may optionally specify the color that you would like to be the "live" instance on the first deployment.
 
 ### manifest.yml
 
@@ -86,7 +41,7 @@ Your Cloud Foundry manifest file must comply with the following requirements:
 1. name: two application instances are required. One name ending with "-green" and another ending with "-blue"
 2. host: the url. One ending with "-green" and the other ending with "-blue"
 3. domain: required
-4. command: Must not include a migration
+4. command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
 5. services: Optional, only required if there are services that need to be bound
 
 #### Bare Minimum Example:
@@ -101,14 +56,14 @@ In this example:
     - name: carrot-soup-green
       host: la-pong-green
       domain: cfapps.io
-      command: bundle exec rails s -p $PORT -e $RAILS_ENV
+      command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
       services:
       - oyster-cracker
 
     - name: carrot-soup-blue
       host: la-pong-blue
       domain: cfapps.io
-      command: bundle exec rails s -p $PORT -e $RAILS_ENV
+      command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
       services:
       - oyster-cracker
 
@@ -131,8 +86,8 @@ This Rake task natively supports worker application instances.
     $ bundle exec rake cf:blue_green_deploy[web-app-name,worker-name,another-worker-name]
 
    Note:
-     "web-app-name" is the "name" attribute (without a color) is detailed in your manifest.yml
-     "worker-name" and "another-worker-name" are "name" attributes for 2 separate worker apps as detailed in your manifest.yml
+     The "web-app-name" is the "name" attribute (without a color) detailed in your manifest.yml
+     The "worker-name" and "another-worker-name" are "name" attributes for 2 separate worker apps as detailed in your manifest.yml
      Multiple worker apps can be specified as long as they comply with the blue/green deployment requirements in the manifest.yml
 
 ### manifest.yml
@@ -141,7 +96,7 @@ For web application deployment (see requirements above)
 
 For worker applications
 1. name: two application instances are required. One name ending with "-green" and another ending with "-blue"
-2. command: Must not include a migration
+2. command:
 3. path: Relative to the current working directory
 4. services: Optional, only required if there are services that need to be bound
 
@@ -149,16 +104,15 @@ For worker applications
 
 In this example:
 - Our web application is known to Cloud Foundry as "carrot-soup".
-- "carrot-soup" has a database service known as "oyster-cracker".
-- We have a worker application named "pickle-breath".
-- It's database is known as "creme-fraiche".
+- The app "carrot-soup" has a database service known as "oyster-cracker".
+- We have a worker application named "relish", whose database is known as "creme-fraiche".
 
     ---
     applications:
 
-    - name: pickle-breath-green
+    - name: relish-green
       command: bundle exec rails s -p $PORT -e $RAILS_ENV
-      path: ../pickle_breath
+      path: ../relish
       services:
       - creme-fraiche
 
@@ -180,29 +134,29 @@ In this example:
       services:
       - oyster-cracker
 
-    - name: pickle-breath-blue
+    - name: relish-blue
       command: bundle exec rails s -p $PORT -e $RAILS_ENV
-      path: ../pickle_breath
+      path: ../relish
       services:
       - creme-fraiche
 
  And perform the blue/green deploy like this:
-     $ bundle exec rake cf:blue_green_deploy[carrot-soup,pickle-breath]
+     $ bundle exec rake cf:blue_green_deploy[carrot-soup,relish]
 
 
 # Blue/Green with Shutter
 
-TODO: explain scenario/context for including a shutter in the mix.
+For blue/green deployments that require a database migration this tool provides the ability to automatically shutter the app during the required downtime. To use this feature, create a shutter app and configure your manifest.yml.
 
 ## Creating a Minimal Shutter App
 
-1. add the following to your manifest.yml:
+1. Add the following to your manifest.yml. Note that the name must match the name of your production application and end in -shutter.
 
-    - name: blue-green-shutter
+    - name: carrot-soup-shutter
       command: bundle exec rackup config.ru -p $PORT -E $RACK_ENV
       path: shutter-app
 
-2. create a directory named "shutter-app".  In that directory:
+2. Create a directory named "shutter-app".  In that directory:
    1. create a Rack config (config.ru):
 
     class Message
@@ -225,6 +179,6 @@ TODO: explain scenario/context for including a shutter in the mix.
     $ bundle install
 
 
- Stuff to add:
+ - Note: as of 05/09/14 deployment using Cloud Foundry's buildpack does not appear to be compatible with ruby version 2.1.0.
  - Our fail-fast philosophy. We recommend understanding deployment on Cloud Foundry before using this tool.
 
