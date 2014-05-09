@@ -18,8 +18,8 @@ namespace :cf do
       with_shutter = false
     end
 
-    deploy_config = BlueGreenDeployConfig.new(load_manifest, web_app_name, worker_app_names, with_shutter)
-    BlueGreenDeploy.make_it_so(web_app_name, worker_app_names, deploy_config)
+    deploy_config = CloudfoundryBlueGreenDeploy::BlueGreenDeployConfig.new(load_manifest, web_app_name, worker_app_names, with_shutter)
+    CloudfoundryBlueGreenDeploy::BlueGreenDeploy.make_it_so(web_app_name, worker_app_names, deploy_config)
   end
 
   def load_manifest
