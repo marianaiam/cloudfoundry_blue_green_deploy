@@ -1,1 +1,3 @@
-class BlueGreenDeployError < StandardError; end
+module CloudfoundryBlueGreenDeploy
+  class BlueGreenDeployError < StandardError; end
+end
