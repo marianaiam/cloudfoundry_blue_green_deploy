@@ -6,7 +6,7 @@ class BlueGreenDeployConfig
   attr_reader :hot_url, :worker_app_names, :domain, :use_shutter
   attr_accessor :target_color
 
-  def initialize(cf_manifest, web_app_name, worker_app_names, use_shutter = nil, target_color = nil)
+  def initialize(cf_manifest, web_app_name, worker_app_names, use_shutter = nil)
     manifest = cf_manifest['applications']
 
     self.class.valid_name_check(web_app_name, worker_app_names, manifest)
@@ -36,7 +36,7 @@ class BlueGreenDeployConfig
     @hot_url = host.slice(0, host.rindex('-'))
     @worker_app_names = worker_app_names
     @use_shutter = use_shutter
-    @target_color = target_color
+    @target_color = nil
   end
 
   def shutter_app_name

@@ -7,7 +7,12 @@ describe BlueGreenDeployConfig do
   let(:worker_app_names) { ['the-web-app-worker', 'hard-worker'] }
   let(:use_shutter) { false }
   let(:target_color) { nil }
-  let(:deploy_config) { BlueGreenDeployConfig.new(cf_manifest, web_app_name, worker_app_names, use_shutter, target_color) }
+  let(:deploy_config) do
+    config = BlueGreenDeployConfig.new(cf_manifest, web_app_name, worker_app_names, use_shutter)
+    config.target_color = target_color
+    config
+  end
+
   describe '#initialize' do
     subject { deploy_config }
     context 'given a parsed conforming manifest.yml' do
@@ -61,8 +66,9 @@ describe BlueGreenDeployConfig do
 
   end
 
-  context 'the target color was provided' do
+  context 'the target color was calculated by Blue Green deploy' do
     let(:target_color) { 'green' }
+
     describe '.target_web_app_name' do
       subject { deploy_config.target_web_app_name }
       it 'calculates the "target" web app name' do
