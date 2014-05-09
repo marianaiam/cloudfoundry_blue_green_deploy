@@ -4,11 +4,11 @@ require_relative 'cloud_foundry_fake'
 describe BlueGreenDeploy do
   let(:cf_manifest) { YAML.load_file('spec/manifest.yml') }
   let(:worker_app_names) { ['the-web-app-worker'] }
-  let(:deploy_config) { BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, use_shutter) }
+  let(:deploy_config) { BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, with_shutter) }
   let(:domain) { 'cfapps.io' }
   let(:hot_url) { 'the-web-url' }
   let(:app_name) { 'the-web-app' }
-  let(:use_shutter) { nil }
+  let(:with_shutter) { nil }
 
   describe '#make_it_so' do
     context 'steady-state deploy (not first deploy, already a hot app)' do
@@ -25,7 +25,7 @@ describe BlueGreenDeploy do
       end
 
       context 'AND deploy does not require shutter' do
-        let(:use_shutter) { false }
+        let(:with_shutter) { false }
         it 'instructs Cloud Foundry to deploy the specified web app; ' +
            'THEN, deploys each of the specified worker apps, stopping their counterparts; ' +
            'and THEN, makes the specified web app "hot" ' +
@@ -47,7 +47,7 @@ describe BlueGreenDeploy do
       end
 
       context 'AND deploy requires shutter' do
-        let(:use_shutter) { true }
+        let(:with_shutter) { true }
         it 'instructs Cloud Foundry to deploy the specified web app; ' +
            'THEN, deploys each of the specified worker apps, stopping their counterparts; ' +
            'and THEN, makes the specified web app "hot" ' +
@@ -168,7 +168,7 @@ describe BlueGreenDeploy do
         let(:current_hot_app) { 'blue' }
         let(:target_color) { 'green' }
         let(:deploy_config) do
-          config = BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, use_shutter)
+          config = BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, with_shutter)
           config.target_color = target_color
           config
         end
@@ -234,7 +234,7 @@ describe BlueGreenDeploy do
     let(:target_color) { 'blue' }
     let(:current_hot_app) { 'green' }
     let(:deploy_config) do
-      config = BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, use_shutter)
+      config = BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, with_shutter)
       config.target_color = target_color
       config
     end

@@ -3,10 +3,10 @@ require_relative 'blue_green_deploy_error'
 class InvalidManifestError < BlueGreenDeployError; end
 
 class BlueGreenDeployConfig
-  attr_reader :hot_url, :worker_app_names, :domain, :use_shutter
+  attr_reader :hot_url, :worker_app_names, :domain, :with_shutter
   attr_accessor :target_color
 
-  def initialize(cf_manifest, web_app_name, worker_app_names, use_shutter = nil)
+  def initialize(cf_manifest, web_app_name, worker_app_names, with_shutter = nil)
     manifest = cf_manifest['applications']
 
     self.class.valid_name_check(web_app_name, worker_app_names, manifest)
@@ -35,7 +35,7 @@ class BlueGreenDeployConfig
     @web_app_name = web_app_name
     @hot_url = host.slice(0, host.rindex('-'))
     @worker_app_names = worker_app_names
-    @use_shutter = use_shutter
+    @with_shutter = with_shutter
     @target_color = nil
   end
 

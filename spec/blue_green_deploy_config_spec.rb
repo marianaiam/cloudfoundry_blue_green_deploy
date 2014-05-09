@@ -5,10 +5,10 @@ describe BlueGreenDeployConfig do
   let(:web_app_name) { 'the-web-app' }
   let(:web_url_name) { 'the-web-url' }
   let(:worker_app_names) { ['the-web-app-worker', 'hard-worker'] }
-  let(:use_shutter) { false }
+  let(:with_shutter) { false }
   let(:target_color) { nil }
   let(:deploy_config) do
-    config = BlueGreenDeployConfig.new(cf_manifest, web_app_name, worker_app_names, use_shutter)
+    config = BlueGreenDeployConfig.new(cf_manifest, web_app_name, worker_app_names, with_shutter)
     config.target_color = target_color
     config
   end
@@ -25,9 +25,9 @@ describe BlueGreenDeployConfig do
       end
 
       context 'user requested "shutter treatment"' do
-        let(:use_shutter) { true }
+        let(:with_shutter) { true }
         it 'indicates "use shutter"' do
-          expect(subject.use_shutter).to eq true
+          expect(subject.with_shutter).to eq true
         end
       end
     end

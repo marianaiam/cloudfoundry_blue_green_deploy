@@ -11,14 +11,14 @@ namespace :cf do
   task :blue_green_deploy, :web_app_name do |t, args|
     web_app_name = args[:web_app_name]
     worker_app_names = args.extras.to_a
-    if worker_app_names.last == 'use_shutter'
+    if worker_app_names.last == 'with_shutter'
       worker_app_names.pop
-      use_shutter = true
+      with_shutter = true
     else
-      use_shutter = false
+      with_shutter = false
     end
 
-    deploy_config = BlueGreenDeployConfig.new(load_manifest, web_app_name, worker_app_names, use_shutter)
+    deploy_config = BlueGreenDeployConfig.new(load_manifest, web_app_name, worker_app_names, with_shutter)
     BlueGreenDeploy.make_it_so(web_app_name, worker_app_names, deploy_config)
   end
 

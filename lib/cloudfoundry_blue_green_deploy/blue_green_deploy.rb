@@ -21,13 +21,13 @@ class BlueGreenDeploy
 
     ready_for_takeoff(hot_app_name, both_invalid_and_valid_hot_worker_names, deploy_config)
 
-    use_shutter = deploy_config.use_shutter
+    with_shutter = deploy_config.with_shutter
     hot_url = deploy_config.hot_url
     cold_app = deploy_config.target_web_app_name
     domain = deploy_config.domain
     shutter_app_name = deploy_config.shutter_app_name
 
-    if use_shutter
+    if with_shutter
       cf.push(shutter_app_name)
       cf.map_route(shutter_app_name, domain, hot_url)
       cf.unmap_route(hot_app_name, domain, hot_url) if hot_app_name
@@ -43,7 +43,7 @@ class BlueGreenDeploy
       end
     end
 
-    if use_shutter
+    if with_shutter
       cf.map_route(cold_app, domain, hot_url)
       cf.unmap_route(shutter_app_name, domain, hot_url)
     else
