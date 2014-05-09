@@ -15,13 +15,9 @@ class BlueGreenDeploy
     hot_app_name = get_hot_web_app(deploy_config.hot_url)
     both_invalid_and_valid_hot_worker_names = get_hot_worker_names
 
-    if deploy_config.target_color.nil?
-      if first_deploy?(hot_app_name, both_invalid_and_valid_hot_worker_names)
-        deploy_config.target_color = 'blue'
-      else
-        deploy_config.target_color = determine_target_color(hot_app_name) unless hot_app_name.nil?
-      end
-    end
+    is_first_deploy = first_deploy?(hot_app_name, both_invalid_and_valid_hot_worker_names)
+
+    deploy_config.target_color = set_target_color(is_first_deploy, hot_app_name)
 
     ready_for_takeoff(hot_app_name, both_invalid_and_valid_hot_worker_names, deploy_config)
 
@@ -41,7 +37,7 @@ class BlueGreenDeploy
 
     deploy_config.target_worker_app_names.each do |worker_app_name|
       cf.push(worker_app_name)
-      unless first_deploy?(hot_app_name, both_invalid_and_valid_hot_worker_names)
+      unless is_first_deploy
         to_be_cold_worker = BlueGreenDeployConfig.toggle_app_color(worker_app_name)
         cf.stop(to_be_cold_worker)
       end
@@ -54,6 +50,15 @@ class BlueGreenDeploy
       make_hot(app_name, deploy_config)
     end
   end
+
+  def self.set_target_color(is_first_deploy, hot_app_name)
+    if is_first_deploy
+      'blue'
+    else
+      determine_target_color(hot_app_name) unless hot_app_name.nil?
+    end
+  end
+
 
   def self.ready_for_takeoff(hot_app_name, both_invalid_and_valid_hot_worker_names, deploy_config)
     unless first_deploy?(hot_app_name, both_invalid_and_valid_hot_worker_names)
@@ -70,8 +75,7 @@ class BlueGreenDeploy
   def self.ensure_there_is_a_hot_instance(deploy_config, hot_app_name)
     if hot_app_name.nil?
       raise InvalidRouteStateError.new(
-        "There is no route mapped from #{deploy_config.hot_url} to an app. " +
-        "Indicate which app instance you want to deploy by specifying \"blue\" or \"green\".")
+        "There is no route mapped from #{deploy_config.hot_url} to an app.")
     end
   end
 
@@ -84,6 +88,7 @@ class BlueGreenDeploy
 
   def self.ensure_hot_workers_are_not_target(deploy_config)
     apps = cf.apps
+
     deploy_config.target_worker_app_names.each do |hot_worker|
       if deploy_config.is_in_target?(hot_worker) && invalid_worker?(hot_worker, apps)
         raise InvalidWorkerStateError.new(

@@ -4,14 +4,14 @@ require_relative 'cloud_foundry_fake'
 describe BlueGreenDeploy do
   let(:cf_manifest) { YAML.load_file('spec/manifest.yml') }
   let(:worker_app_names) { ['the-web-app-worker'] }
-  let(:deploy_config) { BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, use_shutter, target_color) }
+  let(:deploy_config) { BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, use_shutter) }
   let(:domain) { 'cfapps.io' }
   let(:hot_url) { 'the-web-url' }
   let(:app_name) { 'the-web-app' }
   let(:use_shutter) { nil }
 
   describe '#make_it_so' do
-    context 'when blue/green is specified and it is NOT a first-deploy AND deploy does not imply shutter' do
+    context 'steady-state deploy (not first deploy, already a hot app)' do
       let(:worker_apps) { worker_app_names }
       let(:target_color) { 'green' }
       let(:current_hot_app) { 'blue' }
@@ -24,7 +24,7 @@ describe BlueGreenDeploy do
         CloudFoundryFake.init_app_list_with_workers_for(app_name)
       end
 
-      context 'AND deploy does not imply shutter' do
+      context 'AND deploy does not require shutter' do
         let(:use_shutter) { false }
         it 'instructs Cloud Foundry to deploy the specified web app; ' +
            'THEN, deploys each of the specified worker apps, stopping their counterparts; ' +
@@ -46,7 +46,7 @@ describe BlueGreenDeploy do
         end
       end
 
-      context 'AND deploy does not imply shutter' do
+      context 'AND deploy requires shutter' do
         let(:use_shutter) { true }
         it 'instructs Cloud Foundry to deploy the specified web app; ' +
            'THEN, deploys each of the specified worker apps, stopping their counterparts; ' +
@@ -74,34 +74,12 @@ describe BlueGreenDeploy do
       end
     end
 
-    context 'when blue/green is omitted' do
+    context 'it is a first deploy' do
       let(:target_color) { nil }
       let(:worker_apps) { worker_app_names }
       subject { BlueGreenDeploy.make_it_so(app_name, worker_apps, deploy_config) }
       before do
         allow(BlueGreenDeploy).to receive(:cf).and_return(CloudFoundryFake)
-        CloudFoundryFake.init_route_table(domain, app_name, hot_url, current_hot_app)
-        CloudFoundryFake.init_app_list_with_workers_for(app_name)
-      end
-      context 'and there is already a hot app' do
-
-        context 'green is the current hot app' do
-          let(:current_hot_app) { 'green' }
-
-          it 'makes blue the current hot app' do
-            subject
-            expect(CloudFoundryFake.find_route(hot_url).app).to eq "#{app_name}-blue"
-          end
-        end
-
-        context 'blue is the current hot app' do
-          let(:current_hot_app) { 'blue' }
-
-          it 'makes green the current hot app' do
-            subject
-            expect(CloudFoundryFake.find_route(hot_url).app).to eq "#{app_name}-green"
-          end
-        end
       end
 
       context 'there is no hot app' do
@@ -122,7 +100,10 @@ describe BlueGreenDeploy do
         end
 
         context 'there ARE hot worker apps' do
-          before { CloudFoundryFake.mark_app_as_started("#{worker_app_names.first}-blue") }
+          before do
+            CloudFoundryFake.init_app_list_from_names(worker_app_names)
+            CloudFoundryFake.mark_app_as_started("#{worker_app_names.first}-blue")
+          end
           it 'raises an InvalidRouteStateError' do
             expect{ subject }.to raise_error(InvalidRouteStateError)
           end
@@ -185,12 +166,18 @@ describe BlueGreenDeploy do
       end
       context 'the target color is the cold app color.' do
         let(:current_hot_app) { 'blue' }
+        let(:target_color) { 'green' }
+        let(:deploy_config) do
+          config = BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, use_shutter)
+          config.target_color = target_color
+          config
+        end
 
         it 'does not raise an error: "It`s kosh!"' do
           expect{ subject }.to_not raise_error
         end
 
-        context 'but, one or more of the corresponding worker apps is already hot' do
+        context 'but, one or more of the target worker apps is already hot' do
           before do
             CloudFoundryFake.replace_app(App.new(name: "#{app_name}-worker-#{target_color}", state: 'started'))
             both_invalid_and_valid_hot_worker_names = ["#{app_name}-worker-#{target_color}"]
@@ -202,27 +189,18 @@ describe BlueGreenDeploy do
         end
       end
 
-      context 'the target color matches what`s already hot' do
-        let(:current_hot_app) { 'green' }
+
+      context 'and there is no current hot app and there are started worker apps' do
+        let(:target_color) { nil }
+        let(:current_hot_app) { '' }
+        let(:hot_app_name) { nil }
+        before do
+          CloudFoundryFake.remove_route(hot_url)
+          CloudFoundryFake.mark_app_as_started(CloudFoundryFake.apps.sample.name)
+        end
+
         it 'raises an InvalidRouteStateError' do
           expect{ subject }.to raise_error(InvalidRouteStateError)
-        end
-      end
-
-      context 'and blue/green is omitted' do
-        let(:target_color) { nil }
-
-        context 'and there is no current hot app and there are started worker apps' do
-          let(:current_hot_app) { '' }
-          let(:hot_app_name) { nil }
-          before do
-            CloudFoundryFake.remove_route(hot_url)
-            CloudFoundryFake.mark_app_as_started(CloudFoundryFake.apps.sample.name)
-          end
-
-          it 'raises an InvalidRouteStateError' do
-            expect{ subject }.to raise_error(InvalidRouteStateError)
-          end
         end
       end
     end
@@ -255,11 +233,17 @@ describe BlueGreenDeploy do
   describe '#make_hot' do
     let(:target_color) { 'blue' }
     let(:current_hot_app) { 'green' }
+    let(:deploy_config) do
+      config = BlueGreenDeployConfig.new(cf_manifest, app_name, worker_app_names, use_shutter)
+      config.target_color = target_color
+      config
+    end
     subject { BlueGreenDeploy.make_hot(app_name, deploy_config) }
 
     before do
       allow(BlueGreenDeploy).to receive(:cf).and_return(CloudFoundryFake)
       CloudFoundryFake.init_route_table(domain, app_name, hot_url, current_hot_app)
+
     end
 
     context 'when there is no current hot app' do
@@ -277,6 +261,7 @@ describe BlueGreenDeploy do
       before do
         CloudFoundryFake.remove_route(hot_url)
         CloudFoundryFake.add_route(Route.new(hot_url, domain, nil))
+
       end
 
       it 'the target_color is mapped to the hot_url' do

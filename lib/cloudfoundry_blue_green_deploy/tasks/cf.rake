@@ -11,7 +11,6 @@ namespace :cf do
   task :blue_green_deploy, :web_app_name do |t, args|
     web_app_name = args[:web_app_name]
     worker_app_names = args.extras.to_a
-    target_color = worker_app_names.pop if worker_app_names.last == 'blue' || worker_app_names.last == 'green'
     if worker_app_names.last == 'use_shutter'
       worker_app_names.pop
       use_shutter = true
@@ -19,7 +18,7 @@ namespace :cf do
       use_shutter = false
     end
 
-    deploy_config = BlueGreenDeployConfig.new(load_manifest, web_app_name, worker_app_names, use_shutter, target_color)
+    deploy_config = BlueGreenDeployConfig.new(load_manifest, web_app_name, worker_app_names, use_shutter)
     BlueGreenDeploy.make_it_so(web_app_name, worker_app_names, deploy_config)
   end
 
