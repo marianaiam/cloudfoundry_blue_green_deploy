@@ -44,3 +44,8 @@ applications:
   command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
   services:
   - creme-fraiche
+
+- name: the-web-app-shutter
+  host: the-web-url-shutter
+  domain: cfapps.io
+  command: bundle exec rackup config.ru -p $PORT -E $RACK_ENV
