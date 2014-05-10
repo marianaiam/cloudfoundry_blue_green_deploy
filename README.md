@@ -157,15 +157,7 @@ For blue/green deployments that require a database migration this tool provides 
       path: shutter-app
 
 2. Create a directory named "shutter-app".  In that directory:
-   1. create a Rack config (config.ru):
-
-    class Message
-      def call(env)
-        [200, {"Content-Type" => "text/plain"}, ["Temporarily down for maintenance. Please check back shortly."]]
-      end
-    end
-
-    run Message.new
+   1. create a Rack config [config.ru](https://gist.github.com/marianaIAm/4d04a20fdb6d05c64bce)
 
    2. create a minimal Gemfile:
 
