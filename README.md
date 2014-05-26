@@ -177,6 +177,11 @@ For Blue and Green deployments that require a database migration this tool provi
 
 
 
-- Note: as of 05/09/14 deployment using Cloud Foundry's buildpack does not appear to be compatible with ruby version 2.1.0
+- Note: as of 05/09/14 deployment using Cloud Foundry's buildpack is not compatible with ruby version 2.1.0. If you require a ruby version greater than 2.0.x, you can point to the [heroku buildpack](https://github.com/heroku/heroku-buildpack-ruby) in your manifest.yml file.
+
+
+
+        buildpack: git://github.com/heroku/heroku-buildpack-ruby.git
+
 - Our fail-fast philosophy. We recommend understanding deployment on Cloud Foundry before using this tool.
 
