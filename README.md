@@ -7,6 +7,8 @@ This gem provides a Rake task to automate Blue/Green deployment to a Cloud Found
 
 ## Installation
 
+Currently, this gem requires Ruby 2.1.x or better.  At the time of writing, this means you will need to use the Heroku buildpack (as the CloudFoundry buildpack works with 2.0).
+
 Add this line to your application's Gemfile:
 
     gem 'cloudfoundry_blue_green_deploy'
