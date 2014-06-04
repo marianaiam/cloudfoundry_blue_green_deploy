@@ -53,16 +53,15 @@ Our web application is known to Cloud Foundry as `carrot-soup` with a database s
 
     ---
     applications:
-
-    - name: carrot-soup-green
-      host: la-pong-green
+    - name: carrot-soup-blue
+      host: la-pong-blue
       domain: cfapps.io
       command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
       services:
       - oyster-cracker
 
-    - name: carrot-soup-blue
-      host: la-pong-blue
+    - name: carrot-soup-green
+      host: la-pong-green
       domain: cfapps.io
       command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
       services:
@@ -111,22 +110,6 @@ In this example:
 
         ---
         applications:
-        
-        - name: relish-green
-          command: bundle exec rails s -p $PORT -e $RAILS_ENV
-          path: ../relish
-          services:
-          - creme-fraiche
-        
-        - name: carrot-soup-green
-          host: la-pong-green
-          domain: cfapps.io
-          size: 1GB
-          path: .
-          command: bundle exec rails s -p $PORT -e $RAILS_ENV
-          services:
-          - oyster-cracker
-        
         - name: carrot-soup-blue
           host: la-pong-blue
           domain: cfapps.io
@@ -135,15 +118,31 @@ In this example:
           command: bundle exec rails s -p $PORT -e $RAILS_ENV
           services:
           - oyster-cracker
-        
+
         - name: relish-blue
           command: bundle exec rails s -p $PORT -e $RAILS_ENV
           path: ../relish
           services:
           - creme-fraiche
 
+        - name: relish-green
+          command: bundle exec rails s -p $PORT -e $RAILS_ENV
+          path: ../relish
+          services:
+          - creme-fraiche
+
+        - name: carrot-soup-green
+          host: la-pong-green
+          domain: cfapps.io
+          size: 1GB
+          path: .
+          command: bundle exec rails s -p $PORT -e $RAILS_ENV
+          services:
+          - oyster-cracker
+
+
 And perform the blue/green deploy like this:
- 
+
     $ bundle exec rake cf:blue_green_deploy[carrot-soup,relish]
 
 # Blue/Green with Shutter
@@ -168,7 +167,7 @@ For Blue and Green deployments that require a database migration this tool provi
 
         source 'https://rubygems.org'
         ruby '2.0.0'
-        
+
         gem 'rack'
 
 - Create the Gemfile.lock by running Bundler in the `shutter-app` directory:
