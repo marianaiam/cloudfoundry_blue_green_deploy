@@ -49,13 +49,16 @@ module CloudfoundryBlueGreenDeploy
         found_header = false
         lines.each do |line|
           line = line.split
-          if line[0] == 'host' && found_header == false
+          if !found_header && line.include?('host') && line.include?('domain') && line.include?('apps')
             found_header = true
+            @host_index = line.find_index('host')
+            @domain_index = line.find_index('domain')
+            @apps_index = line.find_index('apps')
             next
           end
 
           if found_header
-            routes << Route.new(line[0], line[1], line[2])
+            routes << Route.new(line[@host_index], line[@domain_index], line[@apps_index])
           end
         end
         routes

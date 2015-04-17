@@ -15,9 +15,11 @@ module CloudfoundryBlueGreenDeploy
         before do
           allow(CommandLine).to receive(:system).and_return(false)
         end
+
         it 'throws a CloudfoundryCliError' do
           expect{ subject }.to raise_error(CloudfoundryCliError)
         end
+
       end
     end
 
@@ -34,9 +36,11 @@ module CloudfoundryBlueGreenDeploy
         before do
           allow(CommandLine).to receive(:system).and_return(false)
         end
+
         it 'throws a CloudfoundryCliError' do
           expect{ subject }.to raise_error(CloudfoundryCliError)
         end
+
       end
     end
 
@@ -67,8 +71,8 @@ module CloudfoundryBlueGreenDeploy
           expect(subject[1].name).to eq 'carrot-soup-green'
           expect(subject[1].state).to eq 'started'
         end
-      end
 
+      end
     end
 
     describe '#routes' do
@@ -78,27 +82,49 @@ module CloudfoundryBlueGreenDeploy
       end
 
       context 'there is a route defined in the current organization' do
-        let(:cli_routes_output) {
-          <<-CLI
+        context 'the cf routes output does not include the space (cli version < 6.11)' do
+          let(:cli_routes_output) {
+            <<-CLI
         Getting routes as pivot-pong-developers@googlegroups.com ...
 
         host                 domain      apps
         pivot-pong-blue      cfapps.io   pivot-pong-staging-blue
         pivot-pong-green     cfapps.io   pivot-pong-staging-green
         la-pong              cfapps.io   pivot-pong-staging-green
-          CLI
-        }
+            CLI
+          }
 
+          it 'parses the CLI "routes" output into a collection of Route objects, one for each route' do
+            expect(subject).to be_kind_of(Array)
+            expect(subject.length).to eq 3
+            expect(subject[0].host).to eq 'pivot-pong-blue'
+            expect(subject[0].domain).to eq 'cfapps.io'
+            expect(subject[0].app).to eq 'pivot-pong-staging-blue'
+          end
 
-        it 'parses the CLI "routes" output into a collection of Route objects, one for each route' do
-          expect(subject).to be_kind_of(Array)
-          expect(subject.length).to eq 3
-          expect(subject[0].host).to eq 'pivot-pong-blue'
-          expect(subject[0].domain).to eq 'cfapps.io'
-          expect(subject[0].app).to eq 'pivot-pong-staging-blue'
+        end
+        context 'the cf routes output order is changed' do
+          let(:cli_routes_output) {
+            <<-CLI
+        Getting routes as pivot-pong-developers@googlegroups.com ...
+
+        space        host               domain      apps
+        production   pivot-pong-blue    cfapps.io   pivot-pong-production-blue
+        production   pivot-pong-green   cfapps.io   pivot-pong-production-green
+        production   la-pong            cfapps.io   pivot-pong-production-green
+            CLI
+          }
+
+          it 'parses the CLI "routes" output into a collection of Route objects, one for each route' do
+            expect(subject).to be_kind_of(Array)
+            expect(subject.length).to eq 3
+            expect(subject[0].host).to eq 'pivot-pong-blue'
+            expect(subject[0].domain).to eq 'cfapps.io'
+            expect(subject[0].app).to eq 'pivot-pong-production-blue'
+          end
+
         end
       end
-
       context '"cf routes" fails with an error' do
         let(:cli_routes_output) {
           <<-CLI
@@ -108,9 +134,11 @@ module CloudfoundryBlueGreenDeploy
         Failed fetching routes.
           CLI
         }
+
         it 'throws a CloudfoundryCliError' do
           expect{ subject }.to raise_error(CloudfoundryCliError)
         end
+
       end
     end
 
@@ -130,9 +158,11 @@ module CloudfoundryBlueGreenDeploy
         before do
           allow(CommandLine).to receive(:system).and_return(false)
         end
+
         it 'throws a CloudfoundryCliError' do
           expect{ subject }.to raise_error(CloudfoundryCliError)
         end
+
       end
     end
 
@@ -152,9 +182,11 @@ module CloudfoundryBlueGreenDeploy
         before do
           allow(CommandLine).to receive(:system).and_return(false)
         end
+
         it 'throws a CloudfoundryCliError' do
           expect{ subject }.to raise_error(CloudfoundryCliError)
         end
+
       end
     end
   end
