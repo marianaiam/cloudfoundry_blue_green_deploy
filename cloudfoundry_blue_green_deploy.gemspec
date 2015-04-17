@@ -7,10 +7,10 @@ Gem::Specification.new do |spec|
   spec.name          = 'cloudfoundry_blue_green_deploy'
   spec.version       = CloudfoundryBlueGreenDeploy::VERSION
   spec.authors       = ['John Ryan and Mariana Lenetis']
-  spec.email         = ['jryan@pivotallabs.com', 'mlenetis@pivotallabs.com']
+  spec.email         = ['jryan@pivotal.io', 'mlenetis@pivotal.io']
   spec.summary       = %q{Blue-green deployment tool for Cloud Foundry.}
   spec.description   = %q{Blue-green deployment tool for Cloud Foundry. Please see readme.}
-  spec.homepage      = ''
+  spec.homepage      = 'https://github.com/marianaIAm/cloudfoundry_blue_green_deploy'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0")

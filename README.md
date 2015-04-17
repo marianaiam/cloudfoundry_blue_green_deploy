@@ -7,7 +7,7 @@ This gem provides a Rake task to automate Blue/Green deployment to a Cloud Found
 
 ## Installation
 
-Currently, this gem requires Ruby 2.1.x or better.  At the time of writing, this means you will need to use the Heroku buildpack (as the CloudFoundry buildpack works with 2.0).
+Currently, this gem requires Ruby 2.1.x or better. It is compatible with [Cloud Foundy CLI](https://github.com/cloudfoundry/cli) versions 6.6 - 6.11.
 
 Add this line to your application's Gemfile:
 
@@ -22,7 +22,7 @@ Or download and install:
     $ gem install cloudfoundry_blue_green_deploy
 
 ## First Deployment
-Make sure that any services that are specified in the manifest.yml file are created before running a first deployment.
+Make sure that all services that are specified in the manifest.yml file are created before running a first deployment.
 
 ## Usage
 
@@ -30,12 +30,10 @@ Make sure that any services that are specified in the manifest.yml file are crea
 
 2. Run:
 
-
         $ bundle exec rake cf:blue_green_deploy[web-app-name]
 
    Where "web-app-name" is the "name" attribute in your manifest.yml.
    The default color for first deployment is blue.
-   You may optionally specify the color that you would like to be the "live" instance on the first deployment.
 
 ### manifest.yml
 
@@ -44,34 +42,34 @@ Your Cloud Foundry manifest file must comply with the following requirements:
 - `name`: two application instances are required. One name ending with `-green` and another ending with `-blue`
 - `host`: the url. One ending with `-green` and the other ending with `-blue`
 - `domain`: required
+- `memory`: optional, default will be used if omitted
 - `command`: `bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV`
 - `services`: Optional, only required if there are services that need to be bound
 
 #### Bare Minimum Example:
 
 In this example:
-Our web application is known to Cloud Foundry as `carrot-soup` with a database service known as `oyster-cracker`.
-
+Our web application is known to Cloud Foundry as `awesome-app` with a database service known as `memory-bank-db`. Its URL is `awesomeapp.cfapps.io`.
 
     ---
     applications:
-    - name: carrot-soup-blue
-      host: la-pong-blue
+    - name: awesome-app-blue
+      host: awesomeapp-blue
       domain: cfapps.io
       command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
       services:
-      - oyster-cracker
+      - memory-bank-db
 
-    - name: carrot-soup-green
-      host: la-pong-green
+    - name: awesome-app-green
+      host: awesomeapp-green
       domain: cfapps.io
       command: bundle exec rake cf:on_first_instance db:migrate && bundle exec rails s -p $PORT -e $RAILS_ENV
       services:
-      - oyster-cracker
+      - memory-bank-db
 
 And perform a blue/green deploy like this:
 
-    $ bundle exec rake cf:blue_green_deploy[carrot-soup]
+    $ bundle exec rake cf:blue_green_deploy[awesome-app]
 
 ## Workers
 
@@ -106,46 +104,47 @@ For worker applications:
 #### Example with Workers
 
 In this example:
-- Our web application is known to Cloud Foundry as `carrot-soup`.
-- The app `carrot-soup` has a database service known as `oyster-cracker`.
-- We have a worker application named `relish`, whose database is known as `creme-fraiche`.
+- Our web application is known to Cloud Foundry as `awesome-app`.
+- Its URL is `awesomeapp.cfapps.io`
+- The app `awesome-app` has a database service known as `memory-bank-db`.
+- We have a worker application named `super-queue`, whose database is known as `key-vals-db`.
 
         ---
         applications:
-        - name: carrot-soup-blue
-          host: la-pong-blue
+        - name: awesome-app-blue
+          host: awesomeapp-blue
           domain: cfapps.io
-          size: 1GB
+          memory: 1GB
           path: .
           command: bundle exec rails s -p $PORT -e $RAILS_ENV
           services:
-          - oyster-cracker
+          - memory-bank-db
 
-        - name: relish-blue
-          command: bundle exec rails s -p $PORT -e $RAILS_ENV
-          path: ../relish
-          services:
-          - creme-fraiche
-
-        - name: relish-green
-          command: bundle exec rails s -p $PORT -e $RAILS_ENV
-          path: ../relish
-          services:
-          - creme-fraiche
-
-        - name: carrot-soup-green
-          host: la-pong-green
+        - name: awesome-app-green
+          host: awesomeapp-green
           domain: cfapps.io
-          size: 1GB
+          memory: 1GB
           path: .
           command: bundle exec rails s -p $PORT -e $RAILS_ENV
           services:
-          - oyster-cracker
+          - memory-bank-db
+
+        - name: super-queue-blue
+          command: bundle exec rails s -p $PORT -e $RAILS_ENV
+          path: ../super-queue
+          services:
+          - key-vals-db
+
+        - name: super-queue-green
+          command: bundle exec rails s -p $PORT -e $RAILS_ENV
+          path: ../super-queue
+          services:
+          - key-vals-db
 
 
 And perform the blue/green deploy like this:
 
-    $ bundle exec rake cf:blue_green_deploy[carrot-soup,relish]
+    $ bundle exec rake cf:blue_green_deploy[awesome-app, super-queue]
 
 # Blue/Green with Shutter
 
@@ -155,8 +154,7 @@ For Blue and Green deployments that require a database migration this tool provi
 
 1. Add the following to your manifest.yml. Note that the name must match the name of your production application and end in -shutter.
 
-
-        - name: carrot-soup-shutter
+        - name: awesome-app-shutter
           command: bundle exec rackup config.ru -p $PORT -E $RACK_ENV
           path: shutter-app
 
@@ -166,9 +164,8 @@ For Blue and Green deployments that require a database migration this tool provi
 
 - Create a minimal Gemfile:
 
-
         source 'https://rubygems.org'
-        ruby '2.0.0'
+        ruby '2.1.2'
 
         gem 'rack'
 
@@ -177,12 +174,4 @@ For Blue and Green deployments that require a database migration this tool provi
         $ bundle install
 
 
-
-- Note: as of 05/09/14 deployment using Cloud Foundry's buildpack is not compatible with ruby version 2.1.0. If you require a ruby version greater than 2.0.x, you can point to the [heroku buildpack](https://github.com/heroku/heroku-buildpack-ruby) in your manifest.yml file.
-
-
-
-        buildpack: git://github.com/heroku/heroku-buildpack-ruby.git
-
-- Our fail-fast philosophy. We recommend understanding deployment on Cloud Foundry before using this tool.
-
+Our fail-fast philosophy. We recommend understanding deployment on Cloud Foundry before using this tool.
